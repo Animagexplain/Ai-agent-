@@ -11,6 +11,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.core.content.ContextCompat
+import com.example.data.preference.PreferencesManager
 import com.example.ui.screens.MainScreen
 import com.example.ui.theme.MyApplicationTheme
 import com.example.viewmodel.JarvisViewModel
@@ -18,9 +19,10 @@ import com.example.viewmodel.JarvisViewModel
 class MainActivity : ComponentActivity() {
     private val viewModel: JarvisViewModel by viewModels()
 
-    private val notificationPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { /* Notification permission handled */ }
+    // Request all required runtime permissions on first open
+    private val initialPermissionsLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { /* Initial permissions completed */ }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,14 +40,34 @@ class MainActivity : ComponentActivity() {
             )
         }
 
-        // Request POST_NOTIFICATIONS on Android 13+
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        // Check if this is the user's first time opening the app: request all required permissions
+        val preferences = PreferencesManager(this)
+        if (!preferences.hasRequestedInitialPermissions) {
+            preferences.hasRequestedInitialPermissions = true
+            val permissionsToRequest = mutableListOf<String>()
+
+            // 1. Microphone permission for Rika voice interactions
             if (ContextCompat.checkSelfPermission(
                     this,
-                    Manifest.permission.POST_NOTIFICATIONS
+                    Manifest.permission.RECORD_AUDIO
                 ) != PackageManager.PERMISSION_GRANTED
             ) {
-                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                permissionsToRequest.add(Manifest.permission.RECORD_AUDIO)
+            }
+
+            // 2. Notification permission for reminders and background screen-off companion
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (ContextCompat.checkSelfPermission(
+                        this,
+                        Manifest.permission.POST_NOTIFICATIONS
+                    ) != PackageManager.PERMISSION_GRANTED
+                ) {
+                    permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }
+
+            if (permissionsToRequest.isNotEmpty()) {
+                initialPermissionsLauncher.launch(permissionsToRequest.toTypedArray())
             }
         }
 

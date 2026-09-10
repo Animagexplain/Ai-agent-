@@ -102,16 +102,16 @@ fun VoiceCallScreen(
     }
 
     val statusText = when (voiceState) {
-        VoiceState.LISTENING -> "Listening to you... (Boliyen)"
-        VoiceState.PROCESSING -> "Jarvis thinking... (Soch raha hoon)"
-        VoiceState.SPEAKING -> "Jarvis speaking... (Live Audio)"
+        VoiceState.LISTENING -> "Listening to you... (Rika sun rahi hai 💜)"
+        VoiceState.PROCESSING -> "Rika thinking... (Soch rahi hoon 💜)"
+        VoiceState.SPEAKING -> "Rika speaking... (Live Audio 💜)"
         VoiceState.ERROR -> "Mic or Connection Error"
-        VoiceState.IDLE -> "Tap mic to talk • Speak in Hinglish or English"
+        VoiceState.IDLE -> "Tap mic to talk • Rika se baat karein"
     }
 
     val statusColor = when (voiceState) {
         VoiceState.LISTENING -> CyanPrimary
-        VoiceState.PROCESSING -> Color(0xFF818CF8)
+        VoiceState.PROCESSING -> Color(0xFFC084FC)
         VoiceState.SPEAKING -> CyanGlow
         VoiceState.ERROR -> Color(0xFFEF4444)
         VoiceState.IDLE -> TextSecondary
@@ -243,7 +243,7 @@ fun VoiceCallScreen(
                 latestAssistantMessage.isNotBlank() ->
                     latestAssistantMessage
                 else ->
-                    "\"Arey bhai, salaam! Gujranwala technical institute aur YouTube channel kaisa chal raha hai? Koi anime idea ya reminder chahiye?\""
+                    "\"Hey! Rika yahan hai 💜 Kaho mere dost, aaj kya scene hai? Koi anime idea brainstorm karna hai ya din bhar ki planning?\""
             }
 
             Surface(
@@ -254,7 +254,7 @@ fun VoiceCallScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = if (voiceState == VoiceState.LISTENING) "You (Speaking):" else "Jarvis:",
+                        text = if (voiceState == VoiceState.LISTENING) "You (Speaking):" else "Rika:",
                         color = if (voiceState == VoiceState.LISTENING) CyanGlow else CyanPrimary,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
@@ -271,7 +271,7 @@ fun VoiceCallScreen(
                 }
             }
 
-            // Barge-In (Interrupt button) when Jarvis is speaking
+            // Barge-In (Interrupt button) when Rika is speaking
             AnimatedVisibility(
                 visible = voiceState == VoiceState.SPEAKING,
                 enter = fadeIn(),
@@ -290,11 +290,11 @@ fun VoiceCallScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Stop,
-                        contentDescription = "Interrupt Jarvis",
+                        contentDescription = "Interrupt Rika",
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Barge-in / Interrupt (Ruko)", fontSize = 12.sp)
+                    Text("Ruko Rika / Interrupt", fontSize = 12.sp)
                 }
             }
         }

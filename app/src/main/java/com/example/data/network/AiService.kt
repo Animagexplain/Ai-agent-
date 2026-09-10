@@ -68,7 +68,7 @@ class AiService {
         history: List<ConversationMessage>,
         userMessage: String
     ): Result<AiResponse> {
-        val resolvedModel = if (model.isBlank()) "gemini-3.5-flash" else model
+        val resolvedModel = if (model.isBlank()) "gemini-3.8-flash" else model
         val url = "https://generativelanguage.googleapis.com/v1beta/models/$resolvedModel:generateContent?key=$apiKey"
 
         val rootJson = JSONObject()

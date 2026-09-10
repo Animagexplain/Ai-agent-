@@ -21,15 +21,17 @@ class PreferencesManager(context: Context) {
         private const val KEY_SPEECH_PITCH = "key_speech_pitch"
         private const val KEY_AUTO_SPEAK = "key_auto_speak"
         private const val KEY_SCREEN_OFF_MODE = "key_screen_off_mode"
+        private const val KEY_REQUESTED_INITIAL_PERMISSIONS = "key_requested_initial_permissions"
 
         // Latest Supported Gemini Models
+        const val MODEL_GEMINI_3_8_FLASH = "gemini-3.8-flash"
         const val MODEL_GEMINI_3_5_FLASH = "gemini-3.5-flash"
         const val MODEL_GEMINI_3_1_PRO = "gemini-3.1-pro-preview"
         const val MODEL_GEMINI_3_1_FLASH_LITE = "gemini-3.1-flash-lite-preview"
         const val MODEL_GEMINI_2_5_NATIVE_AUDIO = "gemini-2.5-flash-native-audio-preview-12-2025"
         const val MODEL_GEMINI_FLASH_LATEST = "gemini-flash-latest"
 
-        const val DEFAULT_GEMINI_MODEL = MODEL_GEMINI_3_5_FLASH
+        const val DEFAULT_GEMINI_MODEL = MODEL_GEMINI_3_8_FLASH
         const val DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile"
     }
 
@@ -74,6 +76,10 @@ class PreferencesManager(context: Context) {
     var isScreenOffModeEnabled: Boolean
         get() = prefs.getBoolean(KEY_SCREEN_OFF_MODE, true)
         set(value) = prefs.edit().putBoolean(KEY_SCREEN_OFF_MODE, value).apply()
+
+    var hasRequestedInitialPermissions: Boolean
+        get() = prefs.getBoolean(KEY_REQUESTED_INITIAL_PERMISSIONS, false)
+        set(value) = prefs.edit().putBoolean(KEY_REQUESTED_INITIAL_PERMISSIONS, value).apply()
 
     fun hasActiveApiKey(): Boolean {
         return if (activeProvider == PROVIDER_GEMINI) {

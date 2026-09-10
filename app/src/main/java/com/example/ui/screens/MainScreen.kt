@@ -96,33 +96,40 @@ fun MainScreen(viewModel: JarvisViewModel) {
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        // Futuristic Jarvis Crest
+                        // Rika Cursed Spirit Crest
                         Box(
                             modifier = Modifier
-                                .size(34.dp)
+                                .size(36.dp)
                                 .clip(CircleShape)
-                                .background(CyanDark.copy(alpha = 0.3f))
+                                .background(CyanDark.copy(alpha = 0.4f))
                                 .border(1.5.dp, CyanPrimary, CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(10.dp)
-                                    .clip(CircleShape)
-                                    .background(CyanPrimary)
+                            Icon(
+                                painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.ic_rika_spirit),
+                                contentDescription = "Rika Spirit",
+                                tint = Color.Unspecified,
+                                modifier = Modifier.size(26.dp)
                             )
                         }
 
                         Spacer(modifier = Modifier.width(10.dp))
 
                         Column {
-                            Text(
-                                text = "JARVIS AI",
-                                color = TextPrimary,
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Black,
-                                letterSpacing = 1.5.sp
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "RIKA AI",
+                                    color = TextPrimary,
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Black,
+                                    letterSpacing = 1.5.sp
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "💜",
+                                    fontSize = 12.sp
+                                )
+                            }
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(
                                     modifier = Modifier
@@ -132,8 +139,8 @@ fun MainScreen(viewModel: JarvisViewModel) {
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = if (activeProvider == PreferencesManager.PROVIDER_GEMINI) "Google Gemini • Live" else "Groq • Llama 3.3",
-                                    color = if (hasKey) CyanGlow else StatusWarning,
+                                    text = if (hasKey) "Companion • Online" else "Missing API Key",
+                                    color = if (hasKey) CyanPrimary else StatusWarning,
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Medium
                                 )

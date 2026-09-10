@@ -81,7 +81,7 @@ abstract class JarvisDatabase : RoomDatabase() {
                             chatDao.insertMessage(
                                 ChatMessageEntity(
                                     role = "assistant",
-                                    content = "Arey bhai, salaam! Jarvis ready hai. Aaj Gujranwala ka mausam kaisa hai aur anime channel ya padhai ka kya scene hai? Mic dabao ya text karo, main yahan hoon!",
+                                    content = "Arey salaam! Main Rika hoon 💜 Tumhari apni AI companion aur dost! Gujranwala technical institute ki padhai ho, anime channel ke viral content ideas hon, ya koi reminder set karna ho — main hamesha ready hoon. Mic dabao ya text karo, bolo kya chal raha hai?",
                                     timestamp = System.currentTimeMillis()
                                 )
                             )

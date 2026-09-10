@@ -72,8 +72,8 @@ fun JarvisOrb(
 
     val coreColor = when (voiceState) {
         VoiceState.LISTENING -> CyanPrimary
-        VoiceState.PROCESSING -> Color(0xFF818CF8) // Purple neon
-        VoiceState.SPEAKING -> Color(0xFF38BDF8) // Bright sky blue
+        VoiceState.PROCESSING -> Color(0xFFC084FC) // Radiant cursed lavender
+        VoiceState.SPEAKING -> Color(0xFFF43F5E) // Cursed energy crimson glow
         VoiceState.ERROR -> Color(0xFFEF4444) // Red
         VoiceState.IDLE -> CyanDark
     }

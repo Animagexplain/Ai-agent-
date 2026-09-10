@@ -10,21 +10,26 @@
         <aapt:attr name="android:fillColor">
             <gradient
                 android:angle="315"
-                android:endColor="#06121E"
-                android:startColor="#0D273D"
+                android:endColor="#090111"
+                android:startColor="#250B3A"
                 android:type="linear" />
         </aapt:attr>
     </path>
-    <!-- Concentric subtle tech circles -->
+    <!-- Cursed energy aura rings -->
     <path
         android:fillColor="#00000000"
         android:pathData="M54,54m-42,0a42,42 0,1,1 84,0a42,42 0,1,1 -84,0"
-        android:strokeWidth="0.8"
-        android:strokeColor="#1E4466" />
+        android:strokeWidth="1.2"
+        android:strokeColor="#581C87" />
     <path
         android:fillColor="#00000000"
-        android:pathData="M54,54m-30,0a30,30 0,1,1 60,0a30,30 0,1,1 -60,0"
+        android:pathData="M54,54m-32,0a32,32 0,1,1 64,0a32,32 0,1,1 -64,0"
+        android:strokeWidth="1.0"
+        android:strokeColor="#7E22CE" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M54,54m-22,0a22,22 0,1,1 44,0a22,22 0,1,1 -44,0"
         android:strokeWidth="0.8"
-        android:strokeColor="#25557F" />
+        android:strokeColor="#A855F7" />
 </vector>
 

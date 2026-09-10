@@ -1,5 +1,10 @@
 package com.example.ui.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,6 +28,9 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -53,8 +61,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.core.content.ContextCompat
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -92,6 +102,29 @@ fun SettingsDialog(
     var showGeminiKey by remember { mutableStateOf(false) }
     var showGroqKey by remember { mutableStateOf(false) }
 
+    val context = LocalContext.current
+    var micGranted by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+    var notifGranted by remember {
+        mutableStateOf(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+            } else true
+        )
+    }
+
+    val requestPermissionsLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) {
+        micGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+        notifGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+        } else true
+    }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = DarkSurface,
@@ -106,7 +139,7 @@ fun SettingsDialog(
                 )
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = "BYOK & Assistant Settings",
+                    text = "BYOK & Rika Settings 💜",
                     color = TextPrimary,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
@@ -262,7 +295,8 @@ fun SettingsDialog(
                         fontWeight = FontWeight.SemiBold
                     )
                     val geminiModels = listOf(
-                        PreferencesManager.MODEL_GEMINI_3_5_FLASH to "Gemini 3.5 Flash (Latest & Fast)",
+                        PreferencesManager.MODEL_GEMINI_3_8_FLASH to "Gemini 3.8 Flash (Latest Next-Gen ⚡)",
+                        PreferencesManager.MODEL_GEMINI_3_5_FLASH to "Gemini 3.5 Flash (Fast & Reliable)",
                         PreferencesManager.MODEL_GEMINI_3_1_PRO to "Gemini 3.1 Pro (Reasoning & Code)",
                         PreferencesManager.MODEL_GEMINI_3_1_FLASH_LITE to "Gemini 3.1 Flash Lite (Ultra Fast)",
                         PreferencesManager.MODEL_GEMINI_2_5_NATIVE_AUDIO to "Gemini 2.5 Native Audio (Voice)",
@@ -444,7 +478,7 @@ fun SettingsDialog(
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = "Mobile screen lock/off hone par bhi Jarvis sunta aur baat karta rahega (Foreground Service + Wake Lock).",
+                                    text = "Mobile screen lock/off hone par bhi Rika sunti aur baat karti rahegi (Foreground Service + Wake Lock).",
                                     color = TextSecondary,
                                     fontSize = 11.sp,
                                     lineHeight = 15.sp
@@ -459,6 +493,118 @@ fun SettingsDialog(
                                     checkedTrackColor = CyanDark
                                 )
                             )
+                        }
+                    }
+                }
+
+                // App Permissions Section
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = DarkSurfaceVariant,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, DarkCardBorder),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Security,
+                                contentDescription = null,
+                                tint = CyanPrimary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "App Permissions Status",
+                                color = TextPrimary,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Mic Permission row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Mic,
+                                    contentDescription = null,
+                                    tint = if (micGranted) CyanPrimary else Color(0xFFF87171),
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Microphone (Voice)",
+                                    color = TextSecondary,
+                                    fontSize = 12.sp
+                                )
+                            }
+                            Text(
+                                text = if (micGranted) "Granted ✓" else "Not Granted ✗",
+                                color = if (micGranted) CyanPrimary else Color(0xFFF87171),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        // Notification Permission row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Notifications,
+                                    contentDescription = null,
+                                    tint = if (notifGranted) CyanPrimary else Color(0xFFF87171),
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Notifications (Reminders)",
+                                    color = TextSecondary,
+                                    fontSize = 12.sp
+                                )
+                            }
+                            Text(
+                                text = if (notifGranted) "Granted ✓" else "Not Granted ✗",
+                                color = if (notifGranted) CyanPrimary else Color(0xFFF87171),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+
+                        if (!micGranted || !notifGranted) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(
+                                onClick = {
+                                    val toRequest = mutableListOf<String>()
+                                    if (!micGranted) toRequest.add(Manifest.permission.RECORD_AUDIO)
+                                    if (!notifGranted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                        toRequest.add(Manifest.permission.POST_NOTIFICATIONS)
+                                    }
+                                    if (toRequest.isNotEmpty()) {
+                                        requestPermissionsLauncher.launch(toRequest.toTypedArray())
+                                    }
+                                },
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = CyanPrimary),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = "Grant Required Permissions",
+                                    color = DarkBackground,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
                 }

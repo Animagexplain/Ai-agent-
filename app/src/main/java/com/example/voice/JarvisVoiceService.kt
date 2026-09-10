@@ -96,10 +96,10 @@ class JarvisVoiceService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "Jarvis Screen-Off Voice Assistant",
+                "Rika Screen-Off Voice Assistant",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Keeps Jarvis listening and talking even when the device screen is off"
+                description = "Keeps Rika listening and talking even when the device screen is off"
                 setShowBadge(false)
             }
             val manager = getSystemService(NotificationManager::class.java)
@@ -129,14 +129,14 @@ class JarvisVoiceService : Service() {
         )
 
         val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Jarvis Active • Screen-Off Mode ⚡")
-            .setContentText("Listening for your voice even if screen is locked")
+            .setContentTitle("Rika Active • Screen-Off Mode 💜")
+            .setContentText("Queen of Curses is listening even if screen is locked")
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .setOngoing(true)
             .setContentIntent(pendingOpenIntent)
             .addAction(
                 android.R.drawable.ic_menu_close_clear_cancel,
-                "Stop Jarvis",
+                "Stop Rika",
                 pendingStopIntent
             )
             .setPriority(NotificationCompat.PRIORITY_LOW)

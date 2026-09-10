@@ -143,13 +143,13 @@ fun DashboardScreen(
                 Spacer(modifier = Modifier.width(14.dp))
                 Column {
                     Text(
-                        text = "Jarvis Memory & Productivity Hub",
+                        text = "Rika Memory & Productivity Hub 💜",
                         color = TextPrimary,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Local SQLite persistence • Gujranwala context active",
+                        text = "Queen of Curses • Gujranwala & Anime Hub",
                         color = TextSecondary,
                         fontSize = 12.sp
                     )
@@ -658,7 +658,7 @@ fun QuickNotesCard(
 
             if (notes.isEmpty()) {
                 Text(
-                    text = "Koi note saved nahi hai. Jarvis ko boliye: 'Note save karo: Technical lab presentation Friday ko hai'.",
+                    text = "Koi note saved nahi hai. Rika ko boliye: 'Note save karo: Technical lab presentation Friday ko hai'.",
                     color = TextTertiary,
                     fontSize = 13.sp,
                     modifier = Modifier.padding(vertical = 4.dp)
@@ -729,7 +729,7 @@ fun KeyFactsCard(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Jarvis Memory & Context",
+                        text = "Rika Memory & Context 💜",
                         color = TextPrimary,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold
@@ -749,7 +749,7 @@ fun KeyFactsCard(
             }
 
             Text(
-                text = "Things Jarvis persistently remembers across sessions:",
+                text = "Things Rika persistently remembers about you:",
                 color = TextSecondary,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(vertical = 4.dp)
@@ -901,7 +901,7 @@ fun AddFactDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = DarkSurface,
-        title = { Text("Teach Jarvis New Fact", color = TextPrimary, fontWeight = FontWeight.Bold) },
+        title = { Text("Teach Rika New Fact 💜", color = TextPrimary, fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedTextField(

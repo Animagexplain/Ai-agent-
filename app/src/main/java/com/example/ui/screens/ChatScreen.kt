@@ -162,7 +162,7 @@ fun ChatScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Jarvis soch raha hai...",
+                            text = "Rika soch rahi hai... 💜",
                             color = TextSecondary,
                             fontSize = 13.sp
                         )
@@ -197,7 +197,7 @@ fun ChatScreen(
                     onValueChange = { inputText = it },
                     placeholder = {
                         Text(
-                            "Message Jarvis in Hinglish or English...",
+                            "Message Rika in Hinglish or English...",
                             color = TextTertiary,
                             fontSize = 14.sp
                         )
@@ -279,7 +279,7 @@ fun ChatMessageBubble(message: ChatMessageEntity) {
     ) {
         // Role Label
         Text(
-            text = if (isUser) "You" else "Jarvis",
+            text = if (isUser) "You" else "Rika 💜",
             color = if (isUser) TextSecondary else CyanGlow,
             fontSize = 11.sp,
             fontWeight = FontWeight.SemiBold,
