@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Glowing Outer Pulse Ring -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M54,54m-28,0a28,28 0,1,1 56,0a28,28 0,1,1 -56,0"
+        android:strokeWidth="2.5"
+        android:strokeColor="#38BDF8" />
+
+    <!-- Orbital tech arcs -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M34,40 A26,26 0 0,1 74,40"
+        android:strokeWidth="3"
+        android:strokeColor="#00E5FF"
+        android:strokeLineCap="round" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M34,68 A26,26 0 0,0 74,68"
+        android:strokeWidth="3"
+        android:strokeColor="#00E5FF"
+        android:strokeLineCap="round" />
+
+    <!-- Audio Frequency Waves in Center Core -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M42,50 L42,58"
+        android:strokeWidth="2.5"
+        android:strokeColor="#38BDF8"
+        android:strokeLineCap="round" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M48,44 L48,64"
+        android:strokeWidth="3"
+        android:strokeColor="#67E8F9"
+        android:strokeLineCap="round" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M54,39 L54,69"
+        android:strokeWidth="3.5"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M60,44 L60,64"
+        android:strokeWidth="3"
+        android:strokeColor="#67E8F9"
+        android:strokeLineCap="round" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M66,50 L66,58"
+        android:strokeWidth="2.5"
+        android:strokeColor="#38BDF8"
+        android:strokeLineCap="round" />
+
+    <!-- Center core node -->
+    <path
+        android:fillColor="#00E5FF"
+        android:pathData="M54,54m-4,0a4,4 0,1,1 8,0a4,4 0,1,1 -8,0" />
+</vector>
+

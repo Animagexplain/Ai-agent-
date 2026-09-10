@@ -1,0 +1,7 @@
+{
+  "name": "Jarvis AI",
+  "description": "Personal AI companion and productivity assistant with Hinglish persona, real-time voice, reminders, mood logging, notes, and anime channel brainstorming.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
