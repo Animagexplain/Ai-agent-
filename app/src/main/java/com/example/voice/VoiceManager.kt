@@ -100,13 +100,13 @@ class VoiceManager(
                         if (_voiceState.value == VoiceState.SPEAKING) {
                             _voiceState.value = VoiceState.IDLE
                         }
-                        // Continuous screen-off loop: automatically resume listening after speaking
-                        if (isContinuousSessionActive && isScreenOffModeEnabled) {
+                        // Continuous conversational loop: automatically resume listening after speaking
+                        if (isContinuousSessionActive) {
                             mainHandler.postDelayed({
                                 if (isContinuousSessionActive && _voiceState.value == VoiceState.IDLE) {
                                     startListening()
                                 }
-                            }, 450)
+                            }, 350)
                         }
                     }
 
@@ -114,12 +114,12 @@ class VoiceManager(
                         if (_voiceState.value == VoiceState.SPEAKING) {
                             _voiceState.value = VoiceState.IDLE
                         }
-                        if (isContinuousSessionActive && isScreenOffModeEnabled) {
+                        if (isContinuousSessionActive) {
                             mainHandler.postDelayed({
                                 if (isContinuousSessionActive && _voiceState.value == VoiceState.IDLE) {
                                     startListening()
                                 }
-                            }, 500)
+                            }, 400)
                         }
                     }
                 })
@@ -141,7 +141,13 @@ class VoiceManager(
         }
 
         try {
-            speechRecognizer?.destroy()
+            try {
+                speechRecognizer?.cancel()
+                speechRecognizer?.destroy()
+            } catch (e: Exception) {
+                // Ignore cleanup errors
+            }
+
             speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context).apply {
                 setRecognitionListener(object : RecognitionListener {
                     override fun onReadyForSpeech(params: Bundle?) {
@@ -174,15 +180,29 @@ class VoiceManager(
                         if (_voiceState.value == VoiceState.LISTENING) {
                             _voiceState.value = VoiceState.IDLE
                         }
-                        // If continuous screen-off mode is enabled and it's a silence timeout / no-match, auto-resume
-                        if (isContinuousSessionActive && isScreenOffModeEnabled &&
-                            (error == SpeechRecognizer.ERROR_NO_MATCH || error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT)
-                        ) {
-                            mainHandler.postDelayed({
-                                if (isContinuousSessionActive && _voiceState.value == VoiceState.IDLE) {
-                                    startListening()
+
+                        // Auto-rearm on speech pause, silence timeout, or recognizer busy when in active conversation
+                        if (isContinuousSessionActive) {
+                            when (error) {
+                                SpeechRecognizer.ERROR_NO_MATCH,
+                                SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> {
+                                    mainHandler.postDelayed({
+                                        if (isContinuousSessionActive && _voiceState.value == VoiceState.IDLE) {
+                                            startListening()
+                                        }
+                                    }, 400)
                                 }
-                            }, 650)
+                                SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> {
+                                    try {
+                                        speechRecognizer?.cancel()
+                                    } catch (e: Exception) {}
+                                    mainHandler.postDelayed({
+                                        if (isContinuousSessionActive && _voiceState.value == VoiceState.IDLE) {
+                                            startListening()
+                                        }
+                                    }, 500)
+                                }
+                            }
                         }
                     }
 
@@ -196,12 +216,12 @@ class VoiceManager(
                             onSpeechRecognized(text)
                         } else {
                             _voiceState.value = VoiceState.IDLE
-                            if (isContinuousSessionActive && isScreenOffModeEnabled) {
+                            if (isContinuousSessionActive) {
                                 mainHandler.postDelayed({
                                     if (isContinuousSessionActive && _voiceState.value == VoiceState.IDLE) {
                                         startListening()
                                     }
-                                }, 500)
+                                }, 350)
                             }
                         }
                     }
@@ -220,10 +240,12 @@ class VoiceManager(
 
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ur-PK")
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "ur-PK")
-                putExtra("android.speech.extra.EXTRA_ADDITIONAL_LANGUAGES", arrayOf("en-US", "hi-IN"))
+                // en-IN is optimal for South Asian / Pakistani Hinglish accents
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-IN")
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "en-IN")
+                putExtra("android.speech.extra.EXTRA_ADDITIONAL_LANGUAGES", arrayOf("ur-PK", "hi-IN", "en-US"))
                 putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
                 putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.packageName)
             }
 
@@ -238,6 +260,9 @@ class VoiceManager(
     fun stopListening() {
         try {
             mainHandler.removeCallbacksAndMessages(null)
+            try {
+                speechRecognizer?.cancel()
+            } catch (e: Exception) {}
             speechRecognizer?.stopListening()
             _audioLevel.value = 0f
             if (_voiceState.value == VoiceState.LISTENING) {
@@ -251,8 +276,8 @@ class VoiceManager(
     private fun configureFemaleVoice() {
         try {
             val tts = textToSpeech ?: return
-            val inEnglishLocale = Locale("en", "IN")
-            val hiLocale = Locale("hi", "IN")
+            val inEnglishLocale = Locale.forLanguageTag("en-IN")
+            val hiLocale = Locale.forLanguageTag("hi-IN")
 
             // Inspect available voices on the device
             val voices = tts.voices
@@ -302,7 +327,7 @@ class VoiceManager(
             tts.setSpeechRate(effectiveRate)
         } catch (e: Exception) {
             Log.e("VoiceManager", "Error configuring female voice", e)
-            textToSpeech?.language = Locale("en", "IN")
+            textToSpeech?.language = Locale.forLanguageTag("en-IN")
         }
     }
 

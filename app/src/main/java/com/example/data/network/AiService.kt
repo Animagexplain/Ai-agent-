@@ -68,8 +68,46 @@ class AiService {
         history: List<ConversationMessage>,
         userMessage: String
     ): Result<AiResponse> {
-        val resolvedModel = if (model.isBlank()) "gemini-3.8-flash" else model
-        val url = "https://generativelanguage.googleapis.com/v1beta/models/$resolvedModel:generateContent?key=$apiKey"
+        val targetModel = if (model.isBlank()) "gemini-3.8-flash" else model.trim()
+        val firstAttempt = executeGeminiRequest(apiKey, targetModel, systemInstruction, history, userMessage, includeTools = true)
+
+        if (firstAttempt.isSuccess) {
+            return firstAttempt
+        }
+
+        val err = firstAttempt.exceptionOrNull()?.message.orEmpty()
+
+        // Fallback 1: If target model returned 404 or is not found in v1beta, fallback to stable gemini-2.5-flash or gemini-flash-latest
+        if (err.contains("404") || err.contains("not found", ignoreCase = true) || err.contains("models/")) {
+            val fallbackModel = if (targetModel != "gemini-2.5-flash") "gemini-2.5-flash" else "gemini-flash-latest"
+            Log.w("AiService", "Model '$targetModel' not available ($err). Falling back to '$fallbackModel'")
+            val fallbackAttempt = executeGeminiRequest(apiKey, fallbackModel, systemInstruction, history, userMessage, includeTools = true)
+            if (fallbackAttempt.isSuccess) {
+                return fallbackAttempt
+            }
+        }
+
+        // Fallback 2: If tool definition caused an argument or schema error, retry without tools
+        if (err.contains("INVALID_ARGUMENT", ignoreCase = true) || err.contains("functionDeclarations", ignoreCase = true)) {
+            Log.w("AiService", "Tool calling error. Retrying without tools...")
+            val toolFreeAttempt = executeGeminiRequest(apiKey, targetModel, systemInstruction, history, userMessage, includeTools = false)
+            if (toolFreeAttempt.isSuccess) {
+                return toolFreeAttempt
+            }
+        }
+
+        return firstAttempt
+    }
+
+    private fun executeGeminiRequest(
+        apiKey: String,
+        modelName: String,
+        systemInstruction: String,
+        history: List<ConversationMessage>,
+        userMessage: String,
+        includeTools: Boolean
+    ): Result<AiResponse> {
+        val url = "https://generativelanguage.googleapis.com/v1beta/models/$modelName:generateContent?key=$apiKey"
 
         val rootJson = JSONObject()
 
@@ -103,91 +141,93 @@ class AiService {
         rootJson.put("contents", contentsArray)
 
         // Tools / Function Declarations
-        val toolsArray = JSONArray()
-        val funcDeclObj = JSONObject()
-        val funcDeclarations = JSONArray()
+        if (includeTools) {
+            val toolsArray = JSONArray()
+            val funcDeclObj = JSONObject()
+            val funcDeclarations = JSONArray()
 
-        // 1. create_reminder
-        funcDeclarations.put(
-            JSONObject()
-                .put("name", "create_reminder")
-                .put("description", "Save a reminder or task for the student")
-                .put(
-                    "parameters", JSONObject()
-                        .put("type", "OBJECT")
-                        .put(
-                            "properties", JSONObject()
-                                .put("text", JSONObject().put("type", "STRING").put("description", "The task or reminder description"))
-                                .put("datetime", JSONObject().put("type", "STRING").put("description", "When to remind, e.g., 'Today 6 PM', 'Tomorrow 10 AM'"))
-                        )
-                        .put("required", JSONArray().put("text").put("datetime"))
-                )
-        )
+            // 1. create_reminder
+            funcDeclarations.put(
+                JSONObject()
+                    .put("name", "create_reminder")
+                    .put("description", "Save a reminder or task for the student")
+                    .put(
+                        "parameters", JSONObject()
+                            .put("type", "OBJECT")
+                            .put(
+                                "properties", JSONObject()
+                                    .put("text", JSONObject().put("type", "STRING").put("description", "The task or reminder description"))
+                                    .put("datetime", JSONObject().put("type", "STRING").put("description", "When to remind, e.g., 'Today 6 PM', 'Tomorrow 10 AM'"))
+                            )
+                            .put("required", JSONArray().put("text").put("datetime"))
+                    )
+            )
 
-        // 2. get_reminders
-        funcDeclarations.put(
-            JSONObject()
-                .put("name", "get_reminders")
-                .put("description", "Get upcoming reminders and tasks list")
-                .put(
-                    "parameters", JSONObject()
-                        .put("type", "OBJECT")
-                        .put("properties", JSONObject())
-                )
-        )
+            // 2. get_reminders
+            funcDeclarations.put(
+                JSONObject()
+                    .put("name", "get_reminders")
+                    .put("description", "Get upcoming reminders and tasks list")
+                    .put(
+                        "parameters", JSONObject()
+                            .put("type", "OBJECT")
+                            .put("properties", JSONObject())
+                    )
+            )
 
-        // 3. save_note
-        funcDeclarations.put(
-            JSONObject()
-                .put("name", "save_note")
-                .put("description", "Quickly save an important note, code snippet, study note, or anime observation")
-                .put(
-                    "parameters", JSONObject()
-                        .put("type", "OBJECT")
-                        .put(
-                            "properties", JSONObject()
-                                .put("text", JSONObject().put("type", "STRING").put("description", "The note content to store"))
-                        )
-                        .put("required", JSONArray().put("text"))
-                )
-        )
+            // 3. save_note
+            funcDeclarations.put(
+                JSONObject()
+                    .put("name", "save_note")
+                    .put("description", "Quickly save an important note, code snippet, study note, or anime observation")
+                    .put(
+                        "parameters", JSONObject()
+                            .put("type", "OBJECT")
+                            .put(
+                                "properties", JSONObject()
+                                    .put("text", JSONObject().put("type", "STRING").put("description", "The note content to store"))
+                            )
+                            .put("required", JSONArray().put("text"))
+                    )
+            )
 
-        // 4. youtube_idea_brainstorm
-        funcDeclarations.put(
-            JSONObject()
-                .put("name", "youtube_idea_brainstorm")
-                .put("description", "Brainstorm viral YouTube video ideas for an anime channel based on a topic or anime title")
-                .put(
-                    "parameters", JSONObject()
-                        .put("type", "OBJECT")
-                        .put(
-                            "properties", JSONObject()
-                                .put("topic", JSONObject().put("type", "STRING").put("description", "Anime name, theme, or topic (e.g. Jujutsu Kaisen, Solo Leveling, Top 10 fights)"))
-                        )
-                        .put("required", JSONArray().put("topic"))
-                )
-        )
+            // 4. youtube_idea_brainstorm
+            funcDeclarations.put(
+                JSONObject()
+                    .put("name", "youtube_idea_brainstorm")
+                    .put("description", "Brainstorm viral YouTube video ideas for an anime channel based on a topic or anime title")
+                    .put(
+                        "parameters", JSONObject()
+                            .put("type", "OBJECT")
+                            .put(
+                                "properties", JSONObject()
+                                    .put("topic", JSONObject().put("type", "STRING").put("description", "Anime name, theme, or topic (e.g. Jujutsu Kaisen, Solo Leveling, Top 10 fights)"))
+                            )
+                            .put("required", JSONArray().put("topic"))
+                    )
+            )
 
-        // 5. log_mood
-        funcDeclarations.put(
-            JSONObject()
-                .put("name", "log_mood")
-                .put("description", "Log the student's emotional state or mood with an optional personal note")
-                .put(
-                    "parameters", JSONObject()
-                        .put("type", "OBJECT")
-                        .put(
-                            "properties", JSONObject()
-                                .put("mood", JSONObject().put("type", "STRING").put("description", "Mood name: Happy, Chill, Motivated, Stressed, Tired, or Sad"))
-                                .put("note", JSONObject().put("type", "STRING").put("description", "Why they feel this way or brief context"))
-                        )
-                        .put("required", JSONArray().put("mood"))
-                )
-        )
+            // 5. log_mood
+            funcDeclarations.put(
+                JSONObject()
+                    .put("name", "log_mood")
+                    .put("description", "Log the student's emotional state or mood with an optional personal note")
+                    .put(
+                        "parameters", JSONObject()
+                            .put("type", "OBJECT")
+                            .put(
+                                "properties", JSONObject()
+                                    .put("mood", JSONObject().put("type", "STRING").put("description", "Mood name: Happy, Chill, Motivated, Stressed, Tired, or Sad"))
+                                    .put("note", JSONObject().put("type", "STRING").put("description", "Why they feel this way or brief context"))
+                            )
+                            .put("required", JSONArray().put("mood"))
+                    )
+            )
 
-        funcDeclObj.put("functionDeclarations", funcDeclarations)
-        toolsArray.put(funcDeclObj)
-        rootJson.put("tools", toolsArray)
+            funcDeclObj.put("functionDeclarations", funcDeclarations)
+            toolsArray.put(funcDeclObj)
+            rootJson.put("tools", toolsArray)
+        }
 
         val requestBody = rootJson.toString().toRequestBody(jsonMediaType)
         val request = Request.Builder()

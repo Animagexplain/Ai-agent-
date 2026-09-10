@@ -414,6 +414,10 @@ CRITICAL TONE & ACCENT INSTRUCTION (Conversational Hinglish):
         sendMessage("Rika, mere anime YouTube channel ke liye '$topic' par best viral video ideas aur hooks brainstorm karo!", isSpoken = false)
     }
 
+    fun setContinuousSession(active: Boolean) {
+        voiceManager.isContinuousSessionActive = active
+    }
+
     fun saveSettings(
         provider: String,
         geminiKey: String,

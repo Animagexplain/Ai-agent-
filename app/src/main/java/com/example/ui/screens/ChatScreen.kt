@@ -20,10 +20,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.PhoneInTalk
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
@@ -214,7 +216,20 @@ fun ChatScreen(
                         focusedContainerColor = DarkSurfaceVariant,
                         unfocusedContainerColor = DarkSurfaceVariant
                     ),
-                    singleLine = true
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        imeAction = androidx.compose.ui.text.input.ImeAction.Send,
+                        capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Sentences
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onSend = {
+                            if (inputText.isNotBlank() && !isLoading) {
+                                val text = inputText
+                                inputText = ""
+                                viewModel.sendMessage(text, isSpoken = false)
+                            }
+                        }
+                    )
                 )
 
                 Spacer(modifier = Modifier.width(8.dp))
@@ -257,7 +272,7 @@ fun ChatScreen(
                         .testTag("send_button")
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Send,
+                        imageVector = Icons.AutoMirrored.Filled.Send,
                         contentDescription = "Send Message",
                         modifier = Modifier.size(20.dp)
                     )

@@ -21,7 +21,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.PhoneInTalk
 import androidx.compose.material.icons.filled.Settings
@@ -167,7 +167,7 @@ fun MainScreen(viewModel: JarvisViewModel) {
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                         ) {
                             Icon(
-                                imageVector = if (isVoiceMode) Icons.Default.PhoneInTalk else Icons.Default.Chat,
+                                imageVector = if (isVoiceMode) Icons.Default.PhoneInTalk else Icons.AutoMirrored.Filled.Chat,
                                 contentDescription = null,
                                 tint = CyanPrimary,
                                 modifier = Modifier.size(14.dp)
@@ -238,7 +238,7 @@ fun MainScreen(viewModel: JarvisViewModel) {
                     },
                     icon = {
                         Icon(
-                            imageVector = Icons.Default.Chat,
+                            imageVector = Icons.AutoMirrored.Filled.Chat,
                             contentDescription = "Text Chat"
                         )
                     },

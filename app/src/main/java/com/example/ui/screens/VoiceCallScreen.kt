@@ -25,7 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.Stop
@@ -98,6 +98,17 @@ fun VoiceCallScreen(
         hasMicPermission = granted
         if (granted) {
             viewModel.startListening()
+        }
+    }
+
+    androidx.compose.runtime.DisposableEffect(hasMicPermission) {
+        viewModel.setContinuousSession(true)
+        if (hasMicPermission && voiceState == VoiceState.IDLE) {
+            viewModel.startListening()
+        }
+        onDispose {
+            viewModel.setContinuousSession(false)
+            viewModel.stopListening()
         }
     }
 
@@ -338,7 +349,7 @@ fun VoiceCallScreen(
                     .testTag("switch_to_text_button")
             ) {
                 Icon(
-                    imageVector = Icons.Default.Chat,
+                    imageVector = Icons.AutoMirrored.Filled.Chat,
                     contentDescription = "Switch to Text Mode"
                 )
             }
