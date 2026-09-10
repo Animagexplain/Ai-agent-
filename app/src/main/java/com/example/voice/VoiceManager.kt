@@ -11,6 +11,7 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import android.speech.tts.Voice
 import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -87,19 +88,7 @@ class VoiceManager(
     private fun initTts() {
         textToSpeech = TextToSpeech(context.applicationContext) { status ->
             if (status == TextToSpeech.SUCCESS) {
-                // Try Urdu or Hindi locale first for authentic Hinglish/Urdu cadence, fallback to English
-                val urduLocale = Locale.forLanguageTag("ur-PK")
-                val hindiLocale = Locale.forLanguageTag("hi-IN")
-                val available = textToSpeech?.isLanguageAvailable(urduLocale)
-                if (available == TextToSpeech.LANG_AVAILABLE || available == TextToSpeech.LANG_COUNTRY_AVAILABLE) {
-                    textToSpeech?.language = urduLocale
-                } else if (textToSpeech?.isLanguageAvailable(hindiLocale) == TextToSpeech.LANG_AVAILABLE) {
-                    textToSpeech?.language = hindiLocale
-                } else {
-                    textToSpeech?.language = Locale.ENGLISH
-                }
-                textToSpeech?.setSpeechRate(speechRate)
-                textToSpeech?.setPitch(speechPitch)
+                configureFemaleVoice()
                 isTtsReady = true
 
                 textToSpeech?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
@@ -259,15 +248,77 @@ class VoiceManager(
         }
     }
 
+    private fun configureFemaleVoice() {
+        try {
+            val tts = textToSpeech ?: return
+            val inEnglishLocale = Locale("en", "IN")
+            val hiLocale = Locale("hi", "IN")
+
+            // Inspect available voices on the device
+            val voices = tts.voices
+            var chosenVoice: Voice? = null
+
+            if (!voices.isNullOrEmpty()) {
+                // Priority 1: Indian English or Hindi female voice (fluently speaks Roman Hinglish)
+                chosenVoice = voices.firstOrNull { voice ->
+                    val lang = voice.locale.language.lowercase()
+                    val country = voice.locale.country.lowercase()
+                    val name = voice.name.lowercase()
+                    val isSouthAsian = (lang == "en" && country == "in") || (lang == "hi" && country == "in")
+                    val isFemale = name.contains("female") || name.contains("#female") || name.contains("-f-") || name.contains("cxx") || name.contains("network")
+                    isSouthAsian && isFemale
+                } ?: voices.firstOrNull { voice ->
+                    val lang = voice.locale.language.lowercase()
+                    val country = voice.locale.country.lowercase()
+                    val name = voice.name.lowercase()
+                    val isSouthAsian = (lang == "en" && country == "in") || (lang == "hi" && country == "in")
+                    isSouthAsian && !name.contains("male")
+                } ?: voices.firstOrNull { voice ->
+                    val lang = voice.locale.language.lowercase()
+                    val country = voice.locale.country.lowercase()
+                    lang == "en" && country == "in"
+                }
+            }
+
+            if (chosenVoice != null) {
+                tts.voice = chosenVoice
+                tts.language = chosenVoice.locale
+                Log.d("VoiceManager", "Selected native female voice: ${chosenVoice.name} (${chosenVoice.locale})")
+            } else {
+                // Fallback to Indian English which handles Hinglish/Roman Urdu phonetics naturally
+                if (tts.isLanguageAvailable(inEnglishLocale) >= TextToSpeech.LANG_AVAILABLE) {
+                    tts.language = inEnglishLocale
+                } else if (tts.isLanguageAvailable(hiLocale) >= TextToSpeech.LANG_AVAILABLE) {
+                    tts.language = hiLocale
+                } else {
+                    tts.language = Locale.ENGLISH
+                }
+            }
+
+            // Natural female pitch (1.15f - 1.25f) and conversational pace (1.05f)
+            val effectivePitch = speechPitch.coerceAtLeast(1.15f)
+            val effectiveRate = speechRate.coerceAtLeast(1.05f)
+            tts.setPitch(effectivePitch)
+            tts.setSpeechRate(effectiveRate)
+        } catch (e: Exception) {
+            Log.e("VoiceManager", "Error configuring female voice", e)
+            textToSpeech?.language = Locale("en", "IN")
+        }
+    }
+
     fun speak(text: String) {
         if (!isTtsReady || textToSpeech == null) {
             Log.w("VoiceManager", "TTS not ready")
             return
         }
 
-        // Clean any markdown symbols like asterisks or hashtags from spoken text
+        // Clean emojis, symbols, and markdown so TTS reads smoothly like a real person
         val cleanedText = text
-            .replace(Regex("""[*#_`~>\[\]]"""), "")
+            // Strip emojis (symbols, pictographs, flags, surrogates)
+            .replace(Regex("[\\p{So}\\p{Cn}\\p{Sk}\\p{Cs}\\uFE00-\\uFE0F\\uD83C-\\uDBFF\\uDC00-\\uDFFF]"), "")
+            // Strip markdown asterisks, hashtags, underscores, brackets
+            .replace(Regex("""[*#_`~>\[\]()|{}–—\\]"""), " ")
+            // Normalize spaces
             .replace(Regex("""\s+"""), " ")
             .trim()
 
@@ -275,6 +326,7 @@ class VoiceManager(
 
         stopListening()
         acquireWakeLock()
+        configureFemaleVoice()
         _voiceState.value = VoiceState.SPEAKING
         val params = Bundle().apply {
             putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "jarvis_reply_${System.currentTimeMillis()}")

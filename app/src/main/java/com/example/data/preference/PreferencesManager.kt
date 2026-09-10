@@ -62,11 +62,11 @@ class PreferencesManager(context: Context) {
         set(value) = prefs.edit().putString(KEY_GROQ_MODEL, value).apply()
 
     var speechRate: Float
-        get() = prefs.getFloat(KEY_SPEECH_RATE, 1.0f)
+        get() = prefs.getFloat(KEY_SPEECH_RATE, 1.05f)
         set(value) = prefs.edit().putFloat(KEY_SPEECH_RATE, value).apply()
 
     var speechPitch: Float
-        get() = prefs.getFloat(KEY_SPEECH_PITCH, 1.0f)
+        get() = prefs.getFloat(KEY_SPEECH_PITCH, 1.15f)
         set(value) = prefs.edit().putFloat(KEY_SPEECH_PITCH, value).apply()
 
     var isAutoSpeakEnabled: Boolean
