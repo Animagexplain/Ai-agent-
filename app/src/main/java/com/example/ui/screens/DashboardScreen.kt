@@ -28,9 +28,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Mood
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
-import androidx.compose.material.icons.filled.SmartDisplay
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -63,7 +61,6 @@ import androidx.compose.ui.unit.sp
 import com.example.data.local.entity.MoodLogEntity
 import com.example.data.local.entity.NoteEntity
 import com.example.data.local.entity.ReminderEntity
-import com.example.data.local.entity.UserFactEntity
 import com.example.ui.theme.CyanDark
 import com.example.ui.theme.CyanGlow
 import com.example.ui.theme.CyanPrimary
@@ -93,16 +90,12 @@ fun DashboardScreen(
     val reminders by viewModel.reminders.collectAsState()
     val notes by viewModel.notes.collectAsState()
     val moodLogs by viewModel.moodLogs.collectAsState()
-    val userFacts by viewModel.userFacts.collectAsState()
-    val brainstormResults by viewModel.brainstormResults.collectAsState()
 
     var showAddReminderDialog by remember { mutableStateOf(false) }
     var showAddNoteDialog by remember { mutableStateOf(false) }
-    var showAddFactDialog by remember { mutableStateOf(false) }
 
     var selectedMood by remember { mutableStateOf("Chill") }
     var moodNoteInput by remember { mutableStateOf("") }
-    var animeTopicInput by remember { mutableStateOf("Jujutsu Kaisen Season 3") }
 
     val scrollState = rememberScrollState()
 
@@ -165,7 +158,14 @@ fun DashboardScreen(
             onAddClicked = { showAddReminderDialog = true }
         )
 
-        // Section 2: Mood Tracking Card
+        // Section 2: Quick Notes Card
+        QuickNotesCard(
+            notes = notes,
+            onDelete = { viewModel.deleteNote(it.id) },
+            onAddClicked = { showAddNoteDialog = true }
+        )
+
+        // Section 3: Mood Tracking Card
         MoodTrackerCard(
             moodLogs = moodLogs,
             selectedMood = selectedMood,
@@ -176,28 +176,6 @@ fun DashboardScreen(
                 viewModel.logMood(selectedMood, moodNoteInput)
                 moodNoteInput = ""
             }
-        )
-
-        // Section 3: Anime YouTube Brainstormer
-        AnimeBrainstormCard(
-            topic = animeTopicInput,
-            onTopicChanged = { animeTopicInput = it },
-            results = brainstormResults,
-            onBrainstorm = { viewModel.brainstormAnime(animeTopicInput) }
-        )
-
-        // Section 4: Quick Notes Card
-        QuickNotesCard(
-            notes = notes,
-            onDelete = { viewModel.deleteNote(it.id) },
-            onAddClicked = { showAddNoteDialog = true }
-        )
-
-        // Section 5: Key Facts / Student Context Card
-        KeyFactsCard(
-            facts = userFacts,
-            onDelete = { viewModel.deleteFact(it) },
-            onAddClicked = { showAddFactDialog = true }
         )
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -220,16 +198,6 @@ fun DashboardScreen(
             onConfirm = { noteText ->
                 viewModel.addManualNote(noteText)
                 showAddNoteDialog = false
-            }
-        )
-    }
-
-    if (showAddFactDialog) {
-        AddFactDialog(
-            onDismiss = { showAddFactDialog = false },
-            onConfirm = { k, v ->
-                viewModel.addFact(k, v)
-                showAddFactDialog = false
             }
         )
     }
@@ -520,95 +488,6 @@ fun MoodTrackerCard(
 }
 
 @Composable
-fun AnimeBrainstormCard(
-    topic: String,
-    onTopicChanged: (String) -> Unit,
-    results: List<String>,
-    onBrainstorm: () -> Unit
-) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        shape = RoundedCornerShape(16.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, DarkCardBorder),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.SmartDisplay,
-                    contentDescription = null,
-                    tint = Color(0xFFA78BFA),
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Anime Channel Brainstormer",
-                    color = TextPrimary,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(
-                    value = topic,
-                    onValueChange = onTopicChanged,
-                    placeholder = { Text("Anime topic (e.g. Solo Leveling, Bleach)", fontSize = 12.sp, color = TextTertiary) },
-                    modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = TextPrimary,
-                        unfocusedTextColor = TextPrimary,
-                        focusedBorderColor = Color(0xFFA78BFA),
-                        unfocusedBorderColor = DarkCardBorder,
-                        focusedContainerColor = DarkSurfaceVariant,
-                        unfocusedContainerColor = DarkSurfaceVariant
-                    ),
-                    singleLine = true
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(
-                    onClick = onBrainstorm,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFA78BFA),
-                        contentColor = Color.Black
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.testTag("brainstorm_button")
-                ) {
-                    Text("Ideas", fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                }
-            }
-
-            if (results.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Text("Video Angles & Hooks:", color = Color(0xFFA78BFA), fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(6.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    results.forEach { idea ->
-                        Surface(
-                            color = DarkSurfaceVariant,
-                            shape = RoundedCornerShape(8.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFA78BFA).copy(alpha = 0.3f)),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                text = idea,
-                                color = TextPrimary,
-                                fontSize = 13.sp,
-                                modifier = Modifier.padding(10.dp)
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
 fun QuickNotesCard(
     notes: List<NoteEntity>,
     onDelete: (NoteEntity) -> Unit,
@@ -702,105 +581,6 @@ fun QuickNotesCard(
     }
 }
 
-@Composable
-fun KeyFactsCard(
-    facts: List<UserFactEntity>,
-    onDelete: (UserFactEntity) -> Unit,
-    onAddClicked: () -> Unit
-) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        shape = RoundedCornerShape(16.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, DarkCardBorder),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Psychology,
-                        contentDescription = null,
-                        tint = CyanPrimary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Rika Memory & Context 💜",
-                        color = TextPrimary,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                IconButton(
-                    onClick = onAddClicked,
-                    modifier = Modifier.size(32.dp).testTag("add_fact_button")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Teach Fact",
-                        tint = CyanPrimary
-                    )
-                }
-            }
-
-            Text(
-                text = "Things Rika persistently remembers about you:",
-                color = TextSecondary,
-                fontSize = 12.sp,
-                modifier = Modifier.padding(vertical = 4.dp)
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                facts.forEach { fact ->
-                    Surface(
-                        color = DarkSurfaceVariant,
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = fact.key,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = CyanGlow
-                                )
-                                Text(
-                                    text = fact.value,
-                                    fontSize = 13.sp,
-                                    color = TextPrimary
-                                )
-                            }
-                            IconButton(
-                                onClick = { onDelete(fact) },
-                                modifier = Modifier.size(28.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Delete,
-                                    contentDescription = "Delete Fact",
-                                    tint = TextTertiary,
-                                    modifier = Modifier.size(15.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
 // Dialogs
 @Composable
 fun AddReminderDialog(
@@ -882,56 +662,6 @@ fun AddNoteDialog(
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF34D399), contentColor = Color.Black)
             ) {
                 Text("Save Note")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel", color = TextSecondary) }
-        }
-    )
-}
-
-@Composable
-fun AddFactDialog(
-    onDismiss: () -> Unit,
-    onConfirm: (String, String) -> Unit
-) {
-    var key by remember { mutableStateOf("") }
-    var value by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = DarkSurface,
-        title = { Text("Teach Rika New Fact 💜", color = TextPrimary, fontWeight = FontWeight.Bold) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                OutlinedTextField(
-                    value = key,
-                    onValueChange = { key = it },
-                    label = { Text("Topic / Key (e.g. Favorite Anime, Study Goal)") },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = TextPrimary,
-                        unfocusedTextColor = TextPrimary,
-                        focusedBorderColor = CyanPrimary
-                    )
-                )
-                OutlinedTextField(
-                    value = value,
-                    onValueChange = { value = it },
-                    label = { Text("Information") },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = TextPrimary,
-                        unfocusedTextColor = TextPrimary,
-                        focusedBorderColor = CyanPrimary
-                    )
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = { if (key.isNotBlank() && value.isNotBlank()) onConfirm(key, value) },
-                colors = ButtonDefaults.buttonColors(containerColor = CyanPrimary, contentColor = Color.Black)
-            ) {
-                Text("Remember")
             }
         },
         dismissButton = {

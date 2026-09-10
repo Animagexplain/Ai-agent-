@@ -149,39 +149,6 @@ fun MainScreen(viewModel: JarvisViewModel) {
                     }
                 },
                 actions = {
-                    // Quick Voice / Text Toggle in TopBar
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = DarkSurfaceVariant,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, DarkCardBorder),
-                        modifier = Modifier
-                            .padding(end = 4.dp)
-                            .clickable {
-                                viewModel.setSelectedTab(0)
-                                viewModel.setVoiceMode(!isVoiceMode)
-                            }
-                            .testTag("mode_toggle_topbar")
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (isVoiceMode) Icons.Default.PhoneInTalk else Icons.AutoMirrored.Filled.Chat,
-                                contentDescription = null,
-                                tint = CyanPrimary,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = if (isVoiceMode) "Voice" else "Chat",
-                                fontSize = 11.sp,
-                                color = TextPrimary,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-
                     // Settings Button
                     IconButton(
                         onClick = { viewModel.setSettingsOpen(true) },

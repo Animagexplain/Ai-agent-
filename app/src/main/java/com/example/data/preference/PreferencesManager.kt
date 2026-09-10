@@ -26,12 +26,13 @@ class PreferencesManager(context: Context) {
         // Latest Supported Gemini Models
         const val MODEL_GEMINI_3_8_FLASH = "gemini-3.8-flash"
         const val MODEL_GEMINI_3_5_FLASH = "gemini-3.5-flash"
+        const val MODEL_GEMINI_2_5_FLASH = "gemini-2.5-flash"
         const val MODEL_GEMINI_3_1_PRO = "gemini-3.1-pro-preview"
         const val MODEL_GEMINI_3_1_FLASH_LITE = "gemini-3.1-flash-lite-preview"
         const val MODEL_GEMINI_2_5_NATIVE_AUDIO = "gemini-2.5-flash-native-audio-preview-12-2025"
         const val MODEL_GEMINI_FLASH_LATEST = "gemini-flash-latest"
 
-        const val DEFAULT_GEMINI_MODEL = MODEL_GEMINI_3_8_FLASH
+        const val DEFAULT_GEMINI_MODEL = MODEL_GEMINI_2_5_FLASH
         const val DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile"
     }
 
@@ -54,7 +55,10 @@ class PreferencesManager(context: Context) {
         set(value) = prefs.edit().putString(KEY_GROQ_KEY, value).apply()
 
     var geminiModel: String
-        get() = prefs.getString(KEY_GEMINI_MODEL, DEFAULT_GEMINI_MODEL) ?: DEFAULT_GEMINI_MODEL
+        get() {
+            val saved = prefs.getString(KEY_GEMINI_MODEL, DEFAULT_GEMINI_MODEL) ?: DEFAULT_GEMINI_MODEL
+            return if (saved.contains("3.8") || saved.isBlank()) MODEL_GEMINI_2_5_FLASH else saved
+        }
         set(value) = prefs.edit().putString(KEY_GEMINI_MODEL, value).apply()
 
     var groqModel: String

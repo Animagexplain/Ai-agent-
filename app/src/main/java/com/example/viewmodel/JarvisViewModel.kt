@@ -1,6 +1,7 @@
 package com.example.viewmodel
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.local.JarvisDatabase
@@ -190,7 +191,7 @@ class JarvisViewModel(application: Application) : AndroidViewModel(application) 
             val systemPrompt = buildSystemPrompt(facts)
 
             // 4. Prepare History
-            val recentMessages = chatDao.getRecentMessages(12).reversed()
+            val recentMessages = chatDao.getRecentMessages(8).reversed()
             val history = recentMessages.map { ConversationMessage(it.role, it.content) }
 
             val model = if (provider == PreferencesManager.PROVIDER_GEMINI) {
@@ -202,7 +203,7 @@ class JarvisViewModel(application: Application) : AndroidViewModel(application) 
             voiceManager.setVoiceState(VoiceState.PROCESSING)
 
             // 5. Call AI Service
-            val result = aiService.sendMessage(
+            var result = aiService.sendMessage(
                 provider = provider,
                 apiKey = apiKey,
                 model = model,
@@ -211,19 +212,50 @@ class JarvisViewModel(application: Application) : AndroidViewModel(application) 
                 userMessage = content
             )
 
+            // If Gemini fails and user has Groq API key configured, seamlessly fallback to Groq!
+            if (result.isFailure && provider == PreferencesManager.PROVIDER_GEMINI && preferences.groqApiKey.isNotBlank()) {
+                Log.w("JarvisViewModel", "Gemini call failed, seamlessly falling back to Groq...")
+                result = aiService.sendMessage(
+                    provider = PreferencesManager.PROVIDER_GROQ,
+                    apiKey = preferences.groqApiKey,
+                    model = preferences.groqModel,
+                    systemInstruction = systemPrompt,
+                    history = history,
+                    userMessage = content
+                )
+            }
+
             _isLoading.value = false
 
             result.onSuccess { aiResponse ->
                 handleAiResponse(aiResponse, isSpoken)
             }.onFailure { error ->
                 _errorMessage.value = error.message
+                val rawError = error.localizedMessage.orEmpty()
+                val friendlyMessage = when {
+                    rawError.contains("503") || rawError.contains("high demand", ignoreCase = true) || rawError.contains("UNAVAILABLE", ignoreCase = true) ->
+                        "Arre dost, servers par temporary load zyada chal raha tha! Main bilkul theek hoon, bas ek baar phir se kaho, abhi baat karte hain 💜"
+                    rawError.contains("429") || rawError.contains("RESOURCE_EXHAUSTED", ignoreCase = true) || rawError.contains("quota", ignoreCase = true) ->
+                        "Oye dost, requests limit thodi exceed hui hai. Bas 1 minute baad dobara message karo ya Settings mein API key check kar lo 💜"
+                    rawError.contains("API_KEY", ignoreCase = true) || rawError.contains("API Key", ignoreCase = true) || rawError.contains("401") || rawError.contains("403") ->
+                        "Dost, lagta hai API key check hone wali hai. Top-right settings icon tap karke apni key verify kar lo! 💜"
+                    rawError.contains("Unable to resolve host") || rawError.contains("Failed to connect") || rawError.contains("timeout", ignoreCase = true) ->
+                        "Internet connection thoda slow chal raha hai dost. Wi-Fi ya mobile data check karke dobara try karo 💜"
+                    else ->
+                        "Connection mein thodi si rukawat aayi hai dost. Rika tumhare saath hai, ek baar dobara try karo! 💜"
+                }
+
                 val errorMsg = ChatMessageEntity(
                     role = "assistant",
-                    content = "Oye dost, connection issue aya hai: ${error.localizedMessage ?: "Error"}. Rika tumhare saath hai, ek baar retry karo! 💜",
+                    content = friendlyMessage,
                     timestamp = System.currentTimeMillis()
                 )
                 chatDao.insertMessage(errorMsg)
-                voiceManager.setVoiceState(VoiceState.IDLE)
+                if (isSpoken || preferences.isAutoSpeakEnabled || _isVoiceMode.value) {
+                    voiceManager.speak(friendlyMessage)
+                } else {
+                    voiceManager.setVoiceState(VoiceState.IDLE)
+                }
             }
         }
     }

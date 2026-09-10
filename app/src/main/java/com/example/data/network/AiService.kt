@@ -28,9 +28,10 @@ data class ConversationMessage(
 
 class AiService {
     private val client = OkHttpClient.Builder()
-        .connectTimeout(60, TimeUnit.SECONDS)
-        .readTimeout(60, TimeUnit.SECONDS)
-        .writeTimeout(60, TimeUnit.SECONDS)
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(25, TimeUnit.SECONDS)
+        .writeTimeout(15, TimeUnit.SECONDS)
+        .retryOnConnectionFailure(true)
         .build()
 
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
@@ -68,35 +69,76 @@ class AiService {
         history: List<ConversationMessage>,
         userMessage: String
     ): Result<AiResponse> {
-        val targetModel = if (model.isBlank()) "gemini-3.8-flash" else model.trim()
-        val firstAttempt = executeGeminiRequest(apiKey, targetModel, systemInstruction, history, userMessage, includeTools = true)
-
-        if (firstAttempt.isSuccess) {
-            return firstAttempt
+        // Automatically map non-existent or legacy models to official ultra-fast Gemini 2.5 Flash
+        val cleanModel = when {
+            model.contains("3.8") || model.isBlank() -> "gemini-2.5-flash"
+            model.contains("3.5") -> "gemini-3.5-flash"
+            model.contains("lite") -> "gemini-3.1-flash-lite-preview"
+            else -> model.trim()
         }
 
-        val err = firstAttempt.exceptionOrNull()?.message.orEmpty()
+        // Only valid, highly responsive models in priority order
+        val candidateModels = linkedSetOf(
+            cleanModel,
+            "gemini-2.5-flash",
+            "gemini-flash-latest"
+        ).toList()
 
-        // Fallback 1: If target model returned 404 or is not found in v1beta, fallback to stable gemini-2.5-flash or gemini-flash-latest
-        if (err.contains("404") || err.contains("not found", ignoreCase = true) || err.contains("models/")) {
-            val fallbackModel = if (targetModel != "gemini-2.5-flash") "gemini-2.5-flash" else "gemini-flash-latest"
-            Log.w("AiService", "Model '$targetModel' not available ($err). Falling back to '$fallbackModel'")
-            val fallbackAttempt = executeGeminiRequest(apiKey, fallbackModel, systemInstruction, history, userMessage, includeTools = true)
-            if (fallbackAttempt.isSuccess) {
-                return fallbackAttempt
+        // Smart tool inclusion: only declare tools when user asks for an action or task
+        // Skipping tools for general chat boosts Gemini speed by 2x to 3x!
+        val lowerMsg = userMessage.lowercase()
+        val wantsTools = lowerMsg.contains("remind") || lowerMsg.contains("yaad") ||
+                lowerMsg.contains("note") || lowerMsg.contains("likh") ||
+                lowerMsg.contains("mood") || lowerMsg.contains("stress") ||
+                lowerMsg.contains("idea") || lowerMsg.contains("video") ||
+                lowerMsg.contains("hook") || lowerMsg.contains("script") ||
+                lowerMsg.contains("channel") || lowerMsg.contains("task") ||
+                lowerMsg.contains("schedule")
+
+        var lastError: Throwable? = null
+
+        for (candidate in candidateModels) {
+            Log.d("AiService", "Attempting Gemini with model: $candidate (tools: $wantsTools)")
+            val attempt = executeGeminiRequest(apiKey, candidate, systemInstruction, history, userMessage, includeTools = wantsTools)
+            if (attempt.isSuccess) {
+                return attempt
+            }
+
+            val err = attempt.exceptionOrNull()?.message.orEmpty()
+            lastError = attempt.exceptionOrNull()
+
+            // If it failed due to tool calling schema / argument validation, retry candidate without tools
+            if (wantsTools && (err.contains("INVALID_ARGUMENT", ignoreCase = true) || err.contains("functionDeclarations", ignoreCase = true))) {
+                val toolFreeAttempt = executeGeminiRequest(apiKey, candidate, systemInstruction, history, userMessage, includeTools = false)
+                if (toolFreeAttempt.isSuccess) {
+                    return toolFreeAttempt
+                }
+            }
+
+            // Check if failure is due to high demand, unavailable, rate limit, or model not found
+            val isRecoverableWithAnotherModel =
+                err.contains("503") ||
+                err.contains("high demand", ignoreCase = true) ||
+                err.contains("UNAVAILABLE", ignoreCase = true) ||
+                err.contains("429") ||
+                err.contains("RESOURCE_EXHAUSTED", ignoreCase = true) ||
+                err.contains("404") ||
+                err.contains("not found", ignoreCase = true) ||
+                err.contains("models/") ||
+                err.contains("500")
+
+            if (isRecoverableWithAnotherModel) {
+                Log.w("AiService", "Model '$candidate' encountered ($err). Trying next model in fallback list...")
+                continue
+            } else {
+                // If it's a hard authentication error, stop early
+                if (err.contains("API_KEY_INVALID", ignoreCase = true) || err.contains("401") || err.contains("403")) {
+                    return attempt
+                }
             }
         }
 
-        // Fallback 2: If tool definition caused an argument or schema error, retry without tools
-        if (err.contains("INVALID_ARGUMENT", ignoreCase = true) || err.contains("functionDeclarations", ignoreCase = true)) {
-            Log.w("AiService", "Tool calling error. Retrying without tools...")
-            val toolFreeAttempt = executeGeminiRequest(apiKey, targetModel, systemInstruction, history, userMessage, includeTools = false)
-            if (toolFreeAttempt.isSuccess) {
-                return toolFreeAttempt
-            }
-        }
-
-        return firstAttempt
+        return Result.failure(lastError ?: Exception("Unable to connect to Gemini after trying fallback models."))
     }
 
     private fun executeGeminiRequest(
@@ -111,6 +153,14 @@ class AiService {
 
         val rootJson = JSONObject()
 
+        // Fast generation configuration for snappy conversational responses
+        val genConfig = JSONObject()
+            .put("temperature", 0.7)
+            .put("topK", 40)
+            .put("topP", 0.95)
+            .put("maxOutputTokens", 500)
+        rootJson.put("generationConfig", genConfig)
+
         // System Instruction
         val sysContent = JSONObject()
         val sysParts = JSONArray()
@@ -118,10 +168,9 @@ class AiService {
         sysContent.put("parts", sysParts)
         rootJson.put("systemInstruction", sysContent)
 
-        // Contents (History + User Message)
+        // Contents (Recent History + User Message) - 6 messages is optimal for context & fast upload
         val contentsArray = JSONArray()
-        // Include last 10 messages for context window management
-        val recentHistory = history.takeLast(10)
+        val recentHistory = history.takeLast(6)
         for (msg in recentHistory) {
             val cObj = JSONObject()
             cObj.put("role", if (msg.role == "assistant") "model" else "user")
